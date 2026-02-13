@@ -1,0 +1,368 @@
+.MODEL SMALL
+.STACK 100H
+
+.DATA
+INTRO DB '***************** TRAVEL PLANNER *****************$',10,13
+INTRO2 DB '*************** COA PROJECT 3.0 ******************$',10,13
+
+DESTINATIONS DB 10,13,'Choose Destination:$'
+D1 DB 10,13,'1. Paris (500 USD)$'
+D2 DB 10,13,'2. London (450 USD)$'
+D3 DB 10,13,'3. Tokyo (800 USD)$'
+D4 DB 10,13,'4. New York (700 USD)$'
+D5 DB 10,13,'5. Dubai (600 USD)$'
+
+FLIGHTS DB 10,13,'Choose Flight Class:$'
+F1 DB 10,13,'1. Economy (300 USD)$'
+F2 DB 10,13,'2. Premium Economy (450 USD)$'
+F3 DB 10,13,'3. Business (700 USD)$'
+F4 DB 10,13,'4. First Class (1000 USD)$'
+
+E_TICKETS DB 10,13,'Enter Number of Tickets:$'
+
+ACCOM DB 10,13,'Choose Accommodation:$'
+A1 DB 10,13,'1. 2 Star Hotel (100 USD)$'
+A2 DB 10,13,'2. 3 Star Hotel (200 USD)$'
+A3 DB 10,13,'3. 4 Star Hotel (350 USD)$'
+A4 DB 10,13,'4. 5 Star Hotel (500 USD)$'
+A5 DB 10,13,'5. Cabin (150 USD)$'
+A6 DB 10,13,'6. All Inclusive (800 USD)$'
+
+E_ROOMS DB 10,13,'Enter Number of Rooms:$'
+
+DISCOUNT_PROMPT DB 10,13,'Enter Discount Code (silver5 / gold10 / platinum15 / none):$'
+DISC_APPLIED DB 10,13,'Discount Applied: $'
+NO_DISC DB 'No Discount$'
+PERCENT DB '%$'
+
+TOTALMSG DB 10,13,'TOTAL AMOUNT IS: $'
+NL DB 10,13,'$'
+
+; Discount code strings
+SILVER DB 'silver5',0
+GOLD DB 'gold10',0
+PLATINUM DB 'platinum15',0
+
+; Buffered input
+DISC_BUFF DB 20, ?, 20 DUP('$')
+
+DEST DW ?
+FLIGHT DW ?
+TICKETS DW ?
+ROOMS DW ?
+ACCM DW ?
+TOTAL DW 0
+DISC_PERCENT DW 0
+
+.CODE
+MAIN PROC
+    MOV AX,@DATA
+    MOV DS,AX
+
+; === INTRO ===
+    LEA DX,INTRO
+    MOV AH,9
+    INT 21H
+    LEA DX,INTRO2
+    MOV AH,9
+    INT 21H
+
+; === DESTINATION MENU ===
+    LEA DX,DESTINATIONS
+    MOV AH,9
+    INT 21H
+    LEA DX,D1
+    INT 21H
+    LEA DX,D2
+    INT 21H
+    LEA DX,D3
+    INT 21H
+    LEA DX,D4
+    INT 21H
+    LEA DX,D5
+    INT 21H
+
+    MOV AH,1
+    INT 21H
+    CMP AL,'1'
+    JE DEST_PARIS
+    CMP AL,'2'
+    JE DEST_LONDON
+    CMP AL,'3'
+    JE DEST_TOKYO
+    CMP AL,'4'
+    JE DEST_NY
+    CMP AL,'5'
+    JE DEST_DUBAI
+
+DEST_PARIS: MOV DEST,500
+    JMP FLIGHTMENU
+DEST_LONDON: MOV DEST,450
+    JMP FLIGHTMENU
+DEST_TOKYO: MOV DEST,800
+    JMP FLIGHTMENU
+DEST_NY: MOV DEST,700
+    JMP FLIGHTMENU
+DEST_DUBAI: MOV DEST,600
+
+; === FLIGHT MENU ===
+FLIGHTMENU:
+    LEA DX,FLIGHTS
+    MOV AH,9
+    INT 21H
+    LEA DX,F1
+    INT 21H
+    LEA DX,F2
+    INT 21H
+    LEA DX,F3
+    INT 21H
+    LEA DX,F4
+    INT 21H
+
+    MOV AH,1
+    INT 21H
+    CMP AL,'1'
+    JE ECON
+    CMP AL,'2'
+    JE PREM
+    CMP AL,'3'
+    JE BUS
+    CMP AL,'4'
+    JE FIRST
+
+ECON: MOV FLIGHT,300
+    JMP TICKETQ
+PREM: MOV FLIGHT,450
+    JMP TICKETQ
+BUS: MOV FLIGHT,700
+    JMP TICKETQ
+FIRST: MOV FLIGHT,1000
+
+; === TICKET QUANTITY ===
+TICKETQ:
+    LEA DX,E_TICKETS
+    MOV AH,9
+    INT 21H
+    CALL INDEC
+    MOV TICKETS,AX
+
+    MOV AX,TICKETS
+    MUL FLIGHT
+    ADD TOTAL,AX
+    MOV AX,DEST
+    ADD TOTAL,AX
+
+; === ACCOMMODATION MENU ===
+    LEA DX,ACCOM
+    MOV AH,9
+    INT 21H
+    LEA DX,A1
+    INT 21H
+    LEA DX,A2
+    INT 21H
+    LEA DX,A3
+    INT 21H
+    LEA DX,A4
+    INT 21H
+    LEA DX,A5
+    INT 21H
+    LEA DX,A6
+    INT 21H
+
+    MOV AH,1
+    INT 21H
+    CMP AL,'1'
+    JE ACC2
+    CMP AL,'2'
+    JE ACC3
+    CMP AL,'3'
+    JE ACC4
+    CMP AL,'4'
+    JE ACC5
+    CMP AL,'5'
+    JE ACCCAB
+    CMP AL,'6'
+    JE ACCALL
+
+ACC2: MOV ACCM,100
+    JMP ROOMQ
+ACC3: MOV ACCM,200
+    JMP ROOMQ
+ACC4: MOV ACCM,350
+    JMP ROOMQ
+ACC5: MOV ACCM,500
+    JMP ROOMQ
+ACCCAB: MOV ACCM,150
+    JMP ROOMQ
+ACCALL: MOV ACCM,800
+
+; === ROOM QUANTITY ===
+ROOMQ:
+    LEA DX,E_ROOMS
+    MOV AH,9
+    INT 21H
+    CALL INDEC
+    MOV ROOMS,AX
+
+    MOV AX,ROOMS
+    MUL ACCM
+    ADD TOTAL,AX
+
+; === DISCOUNT CODE INPUT ===
+    LEA DX,DISCOUNT_PROMPT
+    MOV AH,9
+    INT 21H
+
+    LEA DX,DISC_BUFF
+    MOV AH,0Ah
+    INT 21H
+
+    ; --- FIX: terminate string ---
+    MOV BL, DISC_BUFF+1
+    MOV BYTE PTR [DISC_BUFF+2+BX], 0
+
+    MOV DISC_PERCENT,0
+
+    LEA SI,DISC_BUFF+2
+    LEA DI,SILVER
+    CALL STRCMP
+    CMP AX,1
+    JE SET5
+
+    LEA SI,DISC_BUFF+2
+    LEA DI,GOLD
+    CALL STRCMP
+    CMP AX,1
+    JE SET10
+
+    LEA SI,DISC_BUFF+2
+    LEA DI,PLATINUM
+    CALL STRCMP
+    CMP AX,1
+    JE SET15
+    JMP SHOWDISC
+
+SET5:  MOV DISC_PERCENT,5
+       JMP SHOWDISC
+SET10: MOV DISC_PERCENT,10
+       JMP SHOWDISC
+SET15: MOV DISC_PERCENT,15
+
+SHOWDISC:
+    LEA DX,DISC_APPLIED
+    MOV AH,9
+    INT 21H
+
+    CMP DISC_PERCENT,0
+    JE NODISPLAY
+
+    MOV AX,DISC_PERCENT
+    CALL OUTDEC
+    LEA DX,PERCENT
+    MOV AH,9
+    INT 21H
+    JMP APPLYDISC
+
+NODISPLAY:
+    LEA DX,NO_DISC
+    MOV AH,9
+    INT 21H
+
+APPLYDISC:
+    MOV AX,TOTAL
+    MOV BX,DISC_PERCENT
+    MUL BX
+    MOV BX,100
+    DIV BX
+    SUB TOTAL,AX
+
+; === FINAL OUTPUT ===
+    LEA DX,TOTALMSG
+    MOV AH,9
+    INT 21H
+    MOV AX,TOTAL
+    CALL OUTDEC
+
+    MOV AH,4CH
+    INT 21H
+MAIN ENDP
+
+; === STRING COMPARE ===
+STRCMP PROC
+    PUSH SI
+    PUSH DI
+CMPLOOP:
+    MOV AL,[SI]
+    MOV BL,[DI]
+    CMP AL,BL
+    JNE NOTEQ
+    CMP AL,0
+    JE EQ
+    INC SI
+    INC DI
+    JMP CMPLOOP
+NOTEQ:
+    MOV AX,0
+    JMP DONE
+EQ:
+    MOV AX,1
+DONE:
+    POP DI
+    POP SI
+    RET
+STRCMP ENDP
+
+; === INDEC ===
+INDEC PROC
+    PUSH BX
+    XOR BX,BX
+READ:
+    MOV AH,1
+    INT 21H
+    CMP AL,0DH
+    JE DONEIN
+    AND AL,0FH
+    MOV AH,0
+    MOV CX,10
+    MUL CX
+    ADD BX,AX
+    JMP READ
+DONEIN:
+    MOV AX,BX
+    POP BX
+    RET
+INDEC ENDP
+
+; === OUTDEC ===
+OUTDEC PROC
+    PUSH AX
+    PUSH BX
+    PUSH CX
+    PUSH DX
+
+    XOR CX,CX
+    MOV BX,10
+L1:
+    XOR DX,DX
+    DIV BX
+    PUSH DX
+    INC CX
+    OR AX,AX
+    JNE L1
+
+    MOV AH,2
+L2:
+    POP DX
+    ADD DL,'0'
+    INT 21H
+    LOOP L2
+
+    POP DX
+    POP CX
+    POP BX
+    POP AX
+    RET
+OUTDEC ENDP
+
+
+END MAIN
